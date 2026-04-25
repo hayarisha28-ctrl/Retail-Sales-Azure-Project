@@ -1,0 +1,134 @@
+Project Requirements 
+
+Step 1: Ingest Kaggle Data into ADLS & Load into SQL Bronze Layer
+create schema bronze;
+create table bronze.sales(
+id varchar(50),
+timestamp varchar(50),
+quantity varchar(50),
+product_id varchar(50),
+product_name varchar(50),
+unit_price varchar(50),
+total_amount varchar(50),
+store varchar(50),
+payment_method varchar(50),
+customer_id varchar(50),
+customer_type varchar(50),
+year varchar(50),
+month varchar(50),
+day varchar(50),
+day_name varchar(50),
+hour varchar(50)
+);
+Copy into bronze.sales
+from 'link copied'
+with(
+FILE_TYPE ='csv',
+FIRSTROW=2,
+FIELDTERMINATOR=',',
+ROWTERMINATOR = '0x0A'
+)
+
+Step 2: Data Cleaning (Silver Layer)
+Clean the raw data:
+Remove NULL values
+Fix negative quantities/prices
+Remove duplicates
+CREATE SCHEMA silver;
+create table silver.sales(
+id varchar(50),
+transaction_date datetime,
+quantity int,
+product_id varchar(50),
+product_name varchar(50),
+unit_price float,
+total_amount float,
+store varchar(50),
+payment_method varchar(50),
+customer_id varchar(50),
+customer_type varchar(50),
+year varchar(50),
+month varchar(50),
+day varchar(50),
+day_name varchar(50),
+hour int
+);
+insert into silver.sales
+select 
+id,
+TRY_CAST(timestamp as datetime)as timestamp,
+try_cast(quantity as int) as quantity,product_id,product_name,
+try_cast(unit_price as float) as unit_price,
+try_cast(total_amount as decimal(10,2)) as total_amount,store,payment_method,customer_id,customer_type,year,month,day,day_name,
+TRY_CAST(
+        LTRIM(RTRIM(REPLACE(REPLACE(hour, CHAR(13), ''), CHAR(10), '')))
+        AS INT
+    ) AS hour
+
+from bronze.sales
+Step 3 : Create SQL Views (Gold Layer)
+create schema gold
+--vw_kpis: Total sales, total orders, total items sold
+CREATE VIEW gold.vw_kpis AS
+SELECT 
+    SUM(total_amount) AS total_sales,
+    COUNT(DISTINCT id) AS total_orders,
+    SUM(quantity) AS total_items_sold
+FROM silver.sales;
+
+--vw_revenue_by_year: Sales trend by year
+CREATE VIEW gold.vw_revenue_by_year AS
+SELECT 
+    [year],
+    SUM(total_amount) AS yearly_revenue,
+    COUNT(DISTINCT id) AS total_orders
+FROM silver.sales
+GROUP BY [year];
+
+--vw_monthly_revenue: Sales trend by month
+CREATE VIEW gold.vw_monthly_revenue AS
+SELECT
+    [year],
+    [month],
+    SUM(total_amount) AS monthly_revenue,
+    COUNT(DISTINCT id) AS total_orders
+FROM silver.sales
+GROUP BY [year], [month];
+
+--vw_payment_distribution: Sales by payment type (cash/card/contactless)
+CREATE VIEW gold.vw_payment_distribution AS
+SELECT 
+    payment_method,
+    COUNT(*) AS total_transactions,
+    SUM(total_amount) AS total_revenue,
+    SUM(quantity) AS total_items
+FROM silver.sales
+GROUP BY payment_method;
+
+--vw_top_customers: Top 10 best customers
+CREATE VIEW gold.vw_top_customers AS
+SELECT TOP 10
+    customer_id,
+    SUM(total_amount) AS total_spent,
+    COUNT(DISTINCT id) AS number_of_orders
+FROM silver.sales
+GROUP BY customer_id
+ORDER BY total_spent DESC;
+
+--vw_store_performance: Best selling stores
+CREATE VIEW gold.vw_store_performance AS
+SELECT 
+    store,
+    COUNT(DISTINCT id) AS total_orders,
+    SUM(total_amount) AS total_revenue,
+    SUM(quantity) AS total_items_sold,
+FROM silver.sales
+GROUP BY store;
+
+Part 3: Power BI Dashboard
+Build a simple dashboard with:
+ (Total Sales, Total Orders, Total Items)
+ (Sales by year, Top customers)
+ (Monthly sales)
+ (Payment methods)
+Deliverable : Work with your friend, create the project on GitHub, and just share the link
