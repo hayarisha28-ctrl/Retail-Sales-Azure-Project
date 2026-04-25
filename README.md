@@ -23,3 +23,18 @@ This project implements a data pipeline on **Azure** using the Medallion archite
 
 ### Azure SQL Views
 ![SQL Views](Screenshot%202026-04-24%20030104.png)
+## Project Screenshots
+
+### 📊 Dashboard Previews
+![Dashboard Overview](Screenshot%202026-04-24%20025445.png)
+
+![Sales Trends](Screenshot%202026-04-24%20025453.png)
+
+![Performance Analysis](Screenshot%202026-04-24%20025532.png)
+
+### ⚙️ Azure Pipeline & SQL Logic
+![SQL Queries](Screenshot%202026-04-24%20025723.png)
+
+![Database Schema](Screenshot%202026-04-24%20030104.png)
+
+![Final Deployment](Screenshot%202026-04-24%20040507.png)
